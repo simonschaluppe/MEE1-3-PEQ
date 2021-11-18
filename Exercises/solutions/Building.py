@@ -1,8 +1,24 @@
 import pandas as pd
 
 
-DEFAULT_LOADPATH = "data/building.xlsx"
+DEFAULT_LOADPATH = "../../data/building.xlsx"
 
+class Component:
+    """
+    A representation of a building component of the thermal hull
+    """
+    def __init__(self, row):
+        self.name = row["Bauteil"]
+        self.u_value = row["U-Wert"] # U-Wert [W/m²K]
+        self.area = row["Fläche"] # bezugsfläche (Brutto) [m²]
+        self.temp_factor = row["Temperatur-Korrekturfaktor"] # Korrekturfaktor, der angibt, wieviel prozent des Wärmeflusses vgl zu gg. Außenwand vorliegt [-]
+
+    @property
+    def L(self):
+        return self.u_value * self.area * self.temp_factor # = U * A * f_T [W/K]
+
+    def __repr__(self):
+        return f"Bauteil {self.name}: {self.area} m²"
 
 class Building:
     """
@@ -20,6 +36,15 @@ class Building:
         
         self.hull = self.load_hull(path) #from excel
         self.hull = self.insert_windows(self.hull, u_f=u_f, ff_anteil=fensterfl_anteil)
+
+        self.components = []
+        # Außenwand
+        # Dach
+        # fenster
+        # Bodenplatte
+        for i, row in self.hull.iterrows():
+            bauteil = Component(row)
+            self.components.append(bauteil)
         
         self.LT = self.calc_LT(hull_df=self.hull)
 
@@ -32,7 +57,7 @@ class Building:
     def load_hull(self, path):
         """loads the sheet "thermal_ hull" of a excel at path and returns it as a dataframe"""
         hull = pd.read_excel(path, sheet_name="thermal_hull")
-        return hull
+        return hull # returns a dataframe
 
     def insert_windows(self, hull_df, u_f, ff_anteil):
         """takes a hull dataframe from load_hull() and replaces an opak wall with a wall and a window entry, taking the window share and u-value as inputs"""
@@ -66,5 +91,6 @@ class Building:
 
 if __name__ == "__main__":
     test = Building()
-    test_ph = Building(path="data/building_ph.xlsx")
+    test_ph = Building(path="../../data/building_ph.xlsx")
     print("BGF", test.bgf)
+    bauteil = test.components[0]
