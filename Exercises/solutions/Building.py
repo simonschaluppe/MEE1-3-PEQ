@@ -25,7 +25,7 @@ class Building:
     A Model of a building
     """
     def __init__(self, path=DEFAULT_LOADPATH, u_f=0.9, fensterfl_anteil=0.4):
-        print("initializing Building object")
+        print(f"initializing Building object from {path}")
         # your code here...
         
         self.df = self.load_params(path)
@@ -35,7 +35,7 @@ class Building:
         self.net_storey_height = self.df.loc["net_storey_height", "Value"]
         
         self.hull = self.load_hull(path) #from excel
-        self.hull = self.insert_windows(self.hull, u_f=u_f, ff_anteil=fensterfl_anteil)
+        self.hull = self.insert_windows(u_f=u_f, ff_anteil=fensterfl_anteil)
 
         self.components = []
         # Außenwand
@@ -46,7 +46,7 @@ class Building:
             bauteil = Component(row)
             self.components.append(bauteil)
         
-        self.LT = self.calc_LT(hull_df=self.hull)
+        self.LT = self.calc_LT()
 
     def load_params(self, path, sheetname="params"):
         """loads the sheet "params" of a excel at path and returns it as a dataframe"""
@@ -59,31 +59,38 @@ class Building:
         hull = pd.read_excel(path, sheet_name="thermal_hull")
         return hull # returns a dataframe
 
-    def insert_windows(self, hull_df, u_f, ff_anteil):
+    def insert_windows(self, u_f, ff_anteil, bauteil_name="Außenwand (brutto)"):
         """takes a hull dataframe from load_hull() and replaces an opak wall with a wall and a window entry, taking the window share and u-value as inputs"""
-        aw_row = hull_df.loc[0]
+        self.hull.index = self.hull["Bauteil"]
+
+        try:
+            aw_row = self.hull.loc[bauteil_name]
+        except KeyError:
+            raise KeyError(f"Bauteil mit Namen {bauteil_name} nicht gefunden")
+
         aw_A = aw_row["Fläche"]
         aw_Uwert = aw_row["U-Wert"]
-        aw_tfaktor = hull_df.loc[0,"Temperatur-Korrekturfaktor"]
+        aw_tfaktor = aw_row["Temperatur-Korrekturfaktor"]
         
         aw_opak_A = aw_A * (1-ff_anteil)
         fenster_A = aw_A * ff_anteil 
         
-        aw_opak = dict(zip(hull_df.columns,["AW (opak)", aw_opak_A, aw_Uwert, aw_tfaktor]))
-        fenster = dict(zip(hull_df.columns,["Fenster", fenster_A, u_f, hull_df.loc[0,"Temperatur-Korrekturfaktor"]]))
+        aw_opak = dict(zip(self.hull.columns,["AW (opak)", aw_opak_A, aw_Uwert, aw_tfaktor]))
+        fenster = dict(zip(self.hull.columns,["Fenster", fenster_A, u_f, aw_row["Temperatur-Korrekturfaktor"]]))
         
-        hull_df = hull_df.append(aw_opak, ignore_index = True)
-        hull_df = hull_df.append(fenster, ignore_index = True)
-        
-        hull_df.drop(hull_df.index[0], inplace=True)
-        
-        return hull_df
+        self.hull = self.hull.append(aw_opak, ignore_index = True)
+        self.hull = self.hull.append(fenster, ignore_index = True)
+        self.hull.index = self.hull["Bauteil"]
 
-    def calc_LT(self, hull_df):  # expects a pandas dataframe as input
+        self.hull.drop(bauteil_name, inplace=True)
+        
+        return self.hull
+
+    def calc_LT(self):  # expects a pandas dataframe as input
         """calculates the LT from a Hull Dataframe"""
-        A_B = hull_df["Fläche"].sum()
-        hull_df["L_B"] = hull_df["Fläche"] * hull_df["U-Wert"] * hull_df["Temperatur-Korrekturfaktor"]
-        L_B = hull_df.L_B.sum()
+        A_B = self.hull["Fläche"].sum()
+        self.hull["L_B"] = self.hull["Fläche"] * self.hull["U-Wert"] * self.hull["Temperatur-Korrekturfaktor"]
+        L_B = self.hull.L_B.sum()
         L_PX = max(0, (0.2*(0.75-L_B/A_B)*L_B)) #wärmebürkcne
         L_T = L_B + L_PX
         return L_T
@@ -92,5 +99,5 @@ class Building:
 if __name__ == "__main__":
     test = Building()
     test_ph = Building(path="../../data/building_ph.xlsx")
-    print("BGF", test.bgf)
+
     bauteil = test.components[0]
