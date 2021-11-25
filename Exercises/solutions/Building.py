@@ -1,7 +1,8 @@
+from pathlib import Path
+
 import pandas as pd
 
-DEFAULT_LOADPATH = "../../data/building.xlsx"
-
+DATA_DIR = Path("../../data")
 
 class Component:
     """
@@ -28,7 +29,7 @@ class Building:
     A Model of a building
     """
 
-    def __init__(self, path=DEFAULT_LOADPATH, u_f=0.9, fensterfl_anteil=0.4):
+    def __init__(self, path=Path(DATA_DIR, "building.xlsx"), u_f=0.9, fensterfl_anteil=0.4):
         print(f"initializing Building object from {path}")
         # your code here...
 
@@ -122,6 +123,6 @@ LT:                 {self.LT:>{data}.2f} W/K/m²BGF
 if __name__ == "__main__":
 
     print(Building())
-    test = Building(path="../../data/building_ph.xlsx")
+    test = Building(path=Path(DATA_DIR,"building_ph.xlsx"))
     print(test)
     bauteil = test.components[0]
