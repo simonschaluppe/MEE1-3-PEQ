@@ -68,6 +68,8 @@ class Model:
         # load solar gains
         self.QS = np.genfromtxt(Path(DATA_PATH, "Solar_gains.csv"))  # W/m²
 
+        self.simulated = False
+
     def init_sim(self):
         # (re)load profiles from self.Usage
         # this is neccessary  if the PV model has changed inbetween simulations
@@ -285,6 +287,7 @@ class Model:
 
         self.calc_cost(verbose=False)
 
+        self.simulated = True
         Model.simulated.append(self)  # this adds the model result to the base class (optional)
         return True  # the simulate() method does not NEEd to return something
         # but it can be used to check if the simulation ran successfully
@@ -381,11 +384,15 @@ class Model:
 
     def __repr__(self):
         width = 24
-        return f"""
+        string = f"""
 Gebäude    {self.building.file}
 PV-Anlage  {self.PV.kWp} kWp
 Batterie   {self.battery.capacity} kWh
-{"-" * (width + 20)}
+--- {self.simulated=} {"-" * (width)}
+
+"""
+        if self.simulated:
+            string += """
 Heizwärmebedarf (QH):       {self.QH.sum() / 1000:>5.1f} kWh/m²BGFa
 Kühlbedarf (QH):            {-self.QC.sum() / 1000:>5.1f} kWh/m²BGFa
 Strombedarf (ED):           {self.ED.sum() / 1000:>5.1f} kWh/m²BGFa
@@ -396,6 +403,7 @@ Investkosten:               {self.investment_cost:>10.0f} €
 Betriebskosten pro Jahr:   ({self.operational_cost:>10.0f} €/a)
 Betriebskosten (20 Jahre):  {self.operational_cost * 20:>10.0f} €
 Gesamtkosten:               {self.total_cost:>10.0f} €"""
+        return string
 
 
 if __name__ == "__main__":
