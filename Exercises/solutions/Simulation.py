@@ -289,7 +289,7 @@ class Model:
 
         self.simulated = True
         Model.simulated.append(self)  # this adds the model result to the base class (optional)
-        return True  # the simulate() method does not NEEd to return something
+        return self.__repr__()  # the simulate() method does not NEEd to return something
         # but it can be used to check if the simulation ran successfully
 
     def plot(self, show=True, start=None, end=None):
