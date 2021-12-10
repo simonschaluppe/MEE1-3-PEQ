@@ -392,7 +392,7 @@ Batterie   {self.battery.capacity} kWh
 
 """
         if self.simulated:
-            string += """
+            string += f"""
 Heizwärmebedarf (QH):       {self.QH.sum() / 1000:>5.1f} kWh/m²BGFa
 Kühlbedarf (QH):            {-self.QC.sum() / 1000:>5.1f} kWh/m²BGFa
 Strombedarf (ED):           {self.ED.sum() / 1000:>5.1f} kWh/m²BGFa
