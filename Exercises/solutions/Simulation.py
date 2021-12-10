@@ -320,7 +320,7 @@ class Model:
             "Lüftungsverluste": self.QV,
             "Solare Gewinne": self.QS,
             "Innere Lasten": self.QI,
-            "Heizwärmebdedarf": self.QH,
+            "Heizwärmebedarf": self.QH,
             "Kühlbedarf": self.QC,},
             index=self.timestamp
         )
@@ -394,7 +394,7 @@ Batterie   {self.battery.capacity} kWh
         if self.simulated:
             string += f"""
 Heizwärmebedarf (QH):       {self.QH.sum() / 1000:>5.1f} kWh/m²BGFa
-Kühlbedarf (QH):            {-self.QC.sum() / 1000:>5.1f} kWh/m²BGFa
+Kühlbedarf (QC):            {-self.QC.sum() / 1000:>5.1f} kWh/m²BGFa
 Strombedarf (ED):           {self.ED.sum() / 1000:>5.1f} kWh/m²BGFa
 PV Eigenverbrauch (PV_use): {self.PV_use.sum() / 1000:>5.1f} kWh/m²BGFa
 Netzstrom (ED_grid):        {self.ED_grid.sum() / 1000:>5.1f} kWh/m²BGFa
