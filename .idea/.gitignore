@@ -1,17 +1,18 @@
 # Default ignored files
 /shelf/
+# individual settings
+/encodings.xml
+/MEE1-3-PEQ.iml
+/misc.xml
+/modules.xml
+/vcs.xml
 /workspace.xml
+/inspectionProfiles/
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
 # Editor-based HTTP Client requests
 /httpRequests/
 
-# individual settings
-encodings.xml
-MEE1-3-PEQ.iml
-misc.xml
-modules.xml
-vcs.xml
-workspace.xml
+
 
