@@ -4,6 +4,7 @@ Created on Mon Apr 26 13:10:17 2021
 
 @author: Simon
 """
+from pathlib import Path
 
 import numpy as np
 import pvlib
@@ -16,10 +17,16 @@ class PV:
     PV Profile with .TSD in [kWh per hour]
     """
 
-    def __init__(self, csv, kWp, cost_kWp=1500):
+    def __init__(self, csv=None, kWp=1., cost_kWp=1500, array=None):
 
-        self.TSD_source = np.genfromtxt(csv)
-        self.path = csv
+        if array is not None:
+            self.TSD_source = np.array(array)
+            self.path = "Directly from Array input"
+        elif csv is not None:
+            self.TSD_source = np.genfromtxt(csv)
+            self.path = csv
+        else:
+            raise ValueError("Missing Source: Either 'csv' or 'array' argument must be supplied!")
         self.source_kWp = kWp
         self.cost_kWp = cost_kWp # cost per kWh
 
@@ -33,11 +40,16 @@ class PV:
 
     def __repr__(self):
         width = len(self.path)+10
-        return f"""PV-System {self.path}
+        return f"""PV-System {str(self.path)}
 {"-"*width}
-kWp: {self.kWp:>{width-5}d}
+kWp: {self.kWp:>{width-5}.1f}
 kWh/a: {self.TSD.sum():>{width-7}.0f}
-cost [€]: {self.cost:>{width-10}d}"""
+cost [€]: {self.cost:>{width-10}.0f}"""
+
+    def save(self, folder="../../data", filename=None):
+        if filename is None:
+            filename = f"Generic_{self.kWp:.0f}kWp.csv"
+        np.savetxt(Path(folder, filename),self.TSD)
 
 def from_pvlib():
 
@@ -47,23 +59,55 @@ def from_pvlib():
 
     temperature_model_parameters = pvlib.temperature.TEMPERATURE_MODEL_PARAMETERS['sapm']['open_rack_glass_glass']
 
-    # Define the basics of the class PVSystem
-    inverter_data = invdb.iloc[:, np.random.randint(0, high=len(invdb))]
-    system = pvlib.pvsystem.PVSystem(surface_tilt=0, surface_azimuth=180,
-                                     module_parameters=module_data,
-                                     inverter_parameters=inverter_data,
-                                     temperature_model_parameters=temperature_model_parameters)
-    # Creation of the ModelChain object
-    """ The example does not consider AOI losses nor irradiance spectral losses"""
-    mc = pvlib.modelchain.ModelChain(system, location,
-                                     aoi_model='no_loss',
-                                     spectral_model='no_loss',
-                                     name='AssessingSolar_PV')
+    invdb = pvlib.pvsystem.retrieve_sam('CECInverter')
+    iv = invdb[DEFAULT_INVERTER]
 
+
+    # Define the basics of the class PVSystem
+    system_kwargs = dict(
+        module_parameters=module_data,
+        temperature_model_parameters=temperature_model_parameters
+    )
+    arrays = [
+        pvlib.pvsystem.Array(pvlib.pvsystem.FixedMount(30, 180),
+                             modules_per_string=10, strings=3,
+                             name='test',
+                             **system_kwargs),
+        #can add more arrays
+    ]
+
+    system = pvlib.pvsystem.PVSystem(arrays=arrays,
+                                     inverter_parameters=iv, )
+
+
+    latitude, longitude = 48.27, 16.43
+    altitude = 160
+    location = pvlib.location.Location(latitude, longitude, altitude=altitude)
+
+    # Creation of the ModelChain object
+    #""" The example does not consider irradiance spectral losses"""
+    mc = pvlib.modelchain.ModelChain(system, location,
+                                     aoi_model='physical',
+                                     spectral_model='no_loss',
+                                     name='test')
+
+    weather = pvlib.iotools.read_tmy3("../../data/weather/Wien-Hohe_Warte-hour.csv")
+    df_weather = weather[0]
+    rename = {
+        "GHI": "ghi",
+        "DHI": "dhi",
+        "DNI": "dni",
+        "DryBulb": "temp_air",
+        "Wspd": "wind_speed"
+    }
+    df_weather.rename(columns=rename, inplace=True)
+    mc.run_model(df_weather)
+    return PV(array=np.array(mc.results.ac/1000), kWp=(30*0.32))
 
 if __name__ == "__main__":
     test = PV(csv="../../data/pv_1kWp.csv",
               kWp=1)
     import matplotlib.pyplot as plt
-    plt.plot(test.TSD)
-    plt.show()
+    # plt.plot(test.TSD)
+    # plt.show()
+    t2 = from_pvlib()
