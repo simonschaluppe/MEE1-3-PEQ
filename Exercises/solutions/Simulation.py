@@ -235,7 +235,7 @@ class Model:
         c1 = (remaining_ED > 0)
         c2 = (self.battery.SoC > 0)
         if all([c1, c2]):
-            self.Btt_to_ED[t] = self.battery.discharge(remaining_ED)
+            self.Btt_to_ED[t] = self.battery.discharge(remaining_ED) * 1000 / self.building.bgf
 
     def calc_cost(self, years=20, verbose=True):
         """calculates the total cost of the system"""
@@ -386,6 +386,7 @@ class Model:
         width = 24
         string = f"""
 Gebäude    {self.building.file}
+BGF        {self.building.bgf} m²BGF
 PV-Anlage  {self.PV.kWp} kWp
 Batterie   {self.battery.capacity} kWh
 --- {self.simulated=} {"-" * (width)}
