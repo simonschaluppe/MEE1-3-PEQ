@@ -40,13 +40,15 @@ class Dashboard:
 
         self.elplot = pn.pane.Bokeh(self.el_plot())
         self.heatplot = pn.pane.Bokeh(self.heat_balance_plot())
+        self.results = pn.Column(self.elplot, self.heatplot)
 
         self.layout = pn.Column(
             self.header,
             pn.Row(
-                self.inputs, self.elplot, self.heatplot
-            )
+                self.inputs, self.results,)
         )
+
+        self.layout.show()
 
     def run(self, event):
         self.update_inputs()
